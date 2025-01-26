@@ -1,9 +1,7 @@
-import os
 import re
 import subprocess
 import joblib
 import nltk
-import numpy as np
 import pandas as pd
 import mlflow
 import mlflow.keras
@@ -15,7 +13,6 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import Embedding, Dense
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
-from keras.models import load_model
 
 # Download required NLTK data
 nltk.download("stopwords")
