@@ -1,7 +1,5 @@
 import subprocess
-import joblib
 import pandas as pd
-import numpy as np
 import optuna
 import mlflow
 from sklearn.model_selection import train_test_split
@@ -44,13 +42,12 @@ def objective(trial):
     batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
     epochs = 3  # Fixed number of epochs for quick trials
     
-    # Build and train the model
-    model = build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate)
-    
-    early_stopping = EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)
-    
     # Split the data into training and validation sets
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    # Build and train the model
+    model = build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate)
+    early_stopping = EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)
     
     model.fit(
         X_train, y_train,
@@ -81,8 +78,7 @@ def main():
 
     # Load the dataset
     data = load_data("data/dataset.csv")
-    X, tokenizer = preprocess_text(data['text'])
-    # Assuming 'text' is the column with text data
+    X, tokenizer = preprocess_text(data['text'])  # Assuming 'text' is the column with text data
     y = data['label']  # Assuming 'label' is the target variable
 
     # Run Optuna for hyperparameter tuning
@@ -106,13 +102,9 @@ def main():
     
     # Save the trained model using DVC
     final_model.save("model.keras")
-    subprocess.run(["dvc", "add", "model.keras"],
-                   check=True)
-    subprocess.run(["git", "add", "model.keras.dvc"],
-                   check=True)
-    subprocess.run(["git", "commit", "-m",
-                    "Save best model after Optuna tuning"],
-                   check=True)
+    subprocess.run(["dvc", "add", "model.keras"], check=True)
+    subprocess.run(["git", "add", "model.keras.dvc"], check=True)
+    subprocess.run(["git", "commit", "-m", "Save best model after Optuna tuning"], check=True)
     
     # Log the model artifact in MLflow
     mlflow.keras.log_model(final_model, "model")
