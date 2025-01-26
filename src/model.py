@@ -15,12 +15,12 @@ from tensorflow.keras.layers import Embedding, Dense
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from keras.models import load_model
+import optuna  # Import Optuna for hyperparameter optimization
 
 # Download required NLTK data
 nltk.download("stopwords")
 nltk.download("wordnet")
 nltk.download("punkt")
-
 
 def clean_text(text):
     """Clean text data by removing unwanted characters and formatting."""
@@ -32,10 +32,8 @@ def clean_text(text):
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
-
 stemmer = PorterStemmer()
 stop_words = set(nltk.corpus.stopwords.words("english"))
-
 
 def preprocess_text(text):
     """Preprocess text by stemming and removing stopwords."""
@@ -45,138 +43,49 @@ def preprocess_text(text):
     ]
     return " ".join(processed_words)
 
-
-def build_model():
-    """Build and compile the LSTM model."""
+def build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate):
+    """Build and compile the LSTM model with hyperparameters."""
     model = models.Sequential([
-        Embedding(input_dim=10000, output_dim=128, input_length=100),
-        layers.LSTM(128, return_sequences=True),
-        layers.LSTM(64),
-        layers.Dropout(0.2),
+        Embedding(input_dim=10000, output_dim=embedding_dim, input_length=100),
+        layers.LSTM(lstm_units_1, return_sequences=True),
+        layers.LSTM(lstm_units_2),
+        layers.Dropout(dropout_rate),
         Dense(3, activation="softmax")
     ])
-    model.compile(
-        optimizer="adam",
-        loss="sparse_categorical_crossentropy",
-        metrics=["accuracy"]
-    )
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return model
 
+def objective(trial):
+    """Objective function for Optuna optimization."""
+    # Hyperparameters to optimize
+    embedding_dim = trial.suggest_int('embedding_dim', 64, 128)
+    lstm_units_1 = trial.suggest_int('lstm_units_1', 64, 128)
+    lstm_units_2 = trial.suggest_int('lstm_units_2', 32, 64)
+    dropout_rate = trial.suggest_uniform('dropout_rate', 0.2, 0.5)
+    
+    model = build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate)
+    
+    # Early stopping callback
+    early_stopping = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+    
+    # Train the model
+    history = model.fit(X_train, y_train, epochs=3, batch_size=32, validation_data=(X_val, y_val), callbacks=[early_stopping], verbose=0)
+    
+    # Get validation accuracy to maximize
+    val_accuracy = history.history['val_accuracy'][-1]
+    
+    # Log parameters and metrics
+    mlflow.log_param('embedding_dim', embedding_dim)
+    mlflow.log_param('lstm_units_1', lstm_units_1)
+    mlflow.log_param('lstm_units_2', lstm_units_2)
+    mlflow.log_param('dropout_rate', dropout_rate)
+    mlflow.log_metric('val_accuracy', val_accuracy)
+    
+    return val_accuracy
 
-def load_model_and_tokenizer():
-    """Load the trained model and tokenizer."""
-    MODEL_SCRIPT = "src/model.py"
-    MODEL_PATH = "model.keras"
-    TOKEN_PATH = "tokenizer.pkl"
-    if not os.path.exists("model.keras"):
-        print("Model file not found!")
-        subprocess.run(['python', MODEL_SCRIPT])
-        model = load_model("model.keras")
-        tokenizer = joblib.load("tokenizer.pkl")
-        if not os.path.exists(MODEL_PATH) or not os.path.exists(TOKEN_PATH):
-            raise FileNotFoundError("Model or Tokenizer files still not found")
-    else:
-        print("Model file found!")
-        model = load_model("model.keras")
-        tokenizer = joblib.load("tokenizer.pkl")
-    return model, tokenizer
+# Create an Optuna study to optimize the hyperparameters
+study = optuna.create_study(direction='maximize')
+study.optimize(objective, n_trials=10)
 
-
-def predict_sentiment(model, tokenizer, text, max_len=100):
-    """Predict the sentiment of the given text."""
-    preprocessed_text = preprocess_text(text)
-    sequence = tokenizer.texts_to_sequences([preprocessed_text])
-    padded_sequence = pad_sequences(sequence, maxlen=max_len)
-    prediction = model.predict(padded_sequence)
-    return prediction
-
-
-if __name__ == "__main__":
-    # Start MLflow experiment
-    mlflow.set_experiment("Sentiment Analysis")
-
-    with mlflow.start_run():
-        df = pd.read_csv("Tweets.csv")
-        df["processed_text"] = (
-            df["text"]
-            .apply(clean_text)
-            .apply(preprocess_text)
-        )
-
-        df["airline_sentiment_value"] = df["airline_sentiment"].map({
-            "positive": 1,
-            "negative": 0,
-            "neutral": 2
-        })
-
-        X_train, X_temp, y_train, y_temp = train_test_split(
-            df["processed_text"],
-            df["airline_sentiment_value"],
-            test_size=0.3,
-            random_state=42
-        )
-
-        X_val, X_test, y_val, y_test = train_test_split(
-            X_temp, y_temp, test_size=0.5, random_state=42
-        )
-
-        tokenizer = Tokenizer(num_words=10000)
-        tokenizer.fit_on_texts(X_train)
-
-        max_sequence_length = 100
-        X_train = pad_sequences(
-            tokenizer.texts_to_sequences(X_train),
-            maxlen=max_sequence_length
-        )
-        X_val = pad_sequences(
-            tokenizer.texts_to_sequences(X_val),
-            maxlen=max_sequence_length
-        )
-        X_test = pad_sequences(
-            tokenizer.texts_to_sequences(X_test),
-            maxlen=max_sequence_length
-        )
-
-        train_labels = np.array(y_train)
-        val_labels = np.array(y_val)
-        test_labels = np.array(y_test)
-
-        model = build_model()
-        early_stopping = EarlyStopping(
-            monitor="val_loss", patience=3, restore_best_weights=True
-        )
-
-        # Log model hyperparameters
-        mlflow.log_param("embedding_dim", 128)
-        mlflow.log_param("lstm_units_1", 128)
-        mlflow.log_param("lstm_units_2", 64)
-        mlflow.log_param("dropout_rate", 0.2)
-        mlflow.log_param("optimizer", "adam")
-        mlflow.log_param("batch_size", 32)
-        mlflow.log_param("epochs", 1)
-
-        history = model.fit(
-            X_train, train_labels,
-            validation_data=(X_val, val_labels),
-            epochs=1, batch_size=32, callbacks=[early_stopping]
-        )
-
-        # Log metrics
-        mlflow.log_metric("val_loss", history.history['val_loss'][-1])
-        mlflow.log_metric("val_accuracy", history.history['val_accuracy'][-1])
-
-        test_loss, test_accuracy = model.evaluate(X_test, test_labels)
-        mlflow.log_metric("test_loss", test_loss)
-        mlflow.log_metric("test_accuracy", test_accuracy)
-
-        print(f"Test Accuracy: {test_accuracy * 100:.2f}%")
-
-        # Save the model and tokenizer
-        model.save("model.keras")
-        joblib.dump(tokenizer, "tokenizer.pkl")
-
-        # Log artifacts
-        mlflow.keras.log_model(model, "model")
-        mlflow.log_artifact("tokenizer.pkl")
-
-        print("MLflow run completed.")
+# Best hyperparameters found
+print(f"Best trial: {study.best_trial.params}")
