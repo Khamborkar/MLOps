@@ -42,6 +42,10 @@ except Exception as e:
     print(f"Error loading model and tokenizer: {e}")
     model, tokenizer = None, None
 
+@app.route('/')
+def health_check():
+    return jsonify({'status': 'App is running', 'routes': ['/predict']}), 200
+
 # Define a route to predict sentiment from text
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -70,5 +74,5 @@ def predict():
 if __name__ == '__main__':
     # app.run(debug=True)
     # First, run model.py to train the model
-    run_model_training()
+    #run_model_training()
     app.run(host='0.0.0.0', port=5000)
