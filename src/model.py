@@ -19,6 +19,7 @@ nltk.download("stopwords")
 nltk.download("wordnet")
 nltk.download("punkt")
 
+
 def clean_text(text):
     """Clean text data by removing unwanted characters and formatting."""
     text = text.lower()
@@ -29,8 +30,10 @@ def clean_text(text):
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
+
 stemmer = PorterStemmer()
 stop_words = set(nltk.corpus.stopwords.words("english"))
+
 
 def preprocess_text(text):
     """Preprocess text by stemming and removing stopwords."""
@@ -39,6 +42,7 @@ def preprocess_text(text):
         stemmer.stem(word) for word in words if word not in stop_words
     ]
     return " ".join(processed_words)
+
 
 def build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate):
     """Build and compile the LSTM model."""
@@ -55,6 +59,7 @@ def build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate):
         metrics = ["accuracy"]
     )
     return model
+
 
 def objective(trial):
     """Optuna objective function to optimize hyperparameters."""
@@ -120,10 +125,8 @@ def objective(trial):
         epochs=epochs, batch_size=batch_size,
         callbacks=[early_stopping]
     )
-    
     # Evaluate the model
     test_loss, test_accuracy = model.evaluate(X_test, y_test)
-
     # Log hyperparameters and metrics
     mlflow.log_param("embedding_dim", embedding_dim)
     mlflow.log_param("lstm_units_1", lstm_units_1)
@@ -132,8 +135,8 @@ def objective(trial):
     mlflow.log_param("batch_size", batch_size)
     mlflow.log_param("epochs", epochs)
     mlflow.log_metric("test_accuracy", test_accuracy)
-
     return test_accuracy
+
 
 if __name__ == "__main__":
     # Start MLflow experiment
