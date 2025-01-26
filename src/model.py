@@ -172,9 +172,7 @@ if __name__ == "__main__":
         # model.save("src/model.h5")
         # joblib.dump(tokenizer, "src/tokenizer.pkl")
         model.save("model.keras")
-        print("Model is saved")
         joblib.dump(tokenizer, "tokenizer.pkl")
-        print("Tokenizer is saved")
 
         # Log artifacts
         mlflow.keras.log_model(model, "model")
