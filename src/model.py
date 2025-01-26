@@ -162,6 +162,9 @@ if __name__ == "__main__":
         )
 
         # Log metrics
+        mlflow.log_metric("val_loss", history.history['val_loss'][-1])
+        mlflow.log_metric("val_accuracy", history.history['val_accuracy'][-1])
+
         test_loss, test_accuracy = model.evaluate(X_test, test_labels)
         mlflow.log_metric("test_loss", test_loss)
         mlflow.log_metric("test_accuracy", test_accuracy)
@@ -169,12 +172,8 @@ if __name__ == "__main__":
         print(f"Test Accuracy: {test_accuracy * 100:.2f}%")
 
         # Save the model and tokenizer
-        # model.save("src/model.h5")
-        # joblib.dump(tokenizer, "src/tokenizer.pkl")
         model.save("model.keras")
-        print("Model is saved")
         joblib.dump(tokenizer, "tokenizer.pkl")
-        print("Tokenizer is saved")
 
         # Log artifacts
         mlflow.keras.log_model(model, "model")
