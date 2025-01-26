@@ -20,17 +20,6 @@ predict_sentiment = getattr(model_module, 'predict_sentiment', None)
 if not load_model_and_tokenizer or not predict_sentiment:
     raise ImportError("Failed to load required functions from the model module.")
 
-# Run model.py to train the model and save the artifacts
-def run_model_training():
-    # Adjust the command if your Python environment or model.py path differs
-    result = subprocess.run(['python', model_path], capture_output=True, text=True)
-    
-    if result.returncode == 0:
-        print("Model training successful.")
-    else:
-        print("Model training failed.")
-        print("Error:", result.stderr)
-
 # Initialize Flask app
 app = Flask(__name__)
 
@@ -41,7 +30,9 @@ try:
 except Exception as e:
     print(f"Error loading model and tokenizer: {e}")
     model, tokenizer = None, None
+    raise RuntimeError("Failed to load model or tokenizer. Check the artifacts.")
 
+# Define a root route
 @app.route('/')
 def health_check():
     return jsonify({'status': 'App is running', 'routes': ['/predict']}), 200
@@ -72,7 +63,5 @@ def predict():
 
 
 if __name__ == '__main__':
-    # app.run(debug=True)
-    # First, run model.py to train the model
-    #run_model_training()
     app.run(host='0.0.0.0', port=5000)
+
