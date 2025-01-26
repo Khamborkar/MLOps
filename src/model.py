@@ -153,12 +153,12 @@ if __name__ == "__main__":
         mlflow.log_param("dropout_rate", 0.2)
         mlflow.log_param("optimizer", "adam")
         mlflow.log_param("batch_size", 32)
-        mlflow.log_param("epochs", 20)
+        mlflow.log_param("epochs", 2)
 
         history = model.fit(
             X_train, train_labels,
             validation_data=(X_val, val_labels),
-            epochs=20, batch_size=32, callbacks=[early_stopping]
+            epochs=2, batch_size=32, callbacks=[early_stopping]
         )
 
         # Log metrics
