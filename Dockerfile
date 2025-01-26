@@ -13,10 +13,10 @@ RUN pip install -r requirements.txt
 RUN pip install gunicorn mlflow optuna
 
 # Expose the port the app will run on
-EXPOSE 5000
+EXPOSE 8000
 
 # Define environment variable for Flask
 ENV FLASK_APP=app.py
 
 # Start the Flask application with Gunicorn
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:app"]
