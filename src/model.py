@@ -9,12 +9,10 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
-
 # Load the dataset
 def load_data(file_path):
     data = pd.read_csv(file_path)
     return data
-
 
 # Prepare text data for the model
 def preprocess_text(data, max_words=10000, max_len=100):
@@ -24,7 +22,6 @@ def preprocess_text(data, max_words=10000, max_len=100):
     X = pad_sequences(sequences, maxlen=max_len)
     return X, tokenizer
 
-
 # Build the model
 def build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate):
     model = Sequential()
@@ -33,11 +30,8 @@ def build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate):
     model.add(LSTM(lstm_units_2))
     model.add(Dropout(dropout_rate))
     model.add(Dense(1, activation='sigmoid'))
-    model.compile(optimizer='adam',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy'])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return model
-
 
 # Optuna objective function for hyperparameter tuning
 def objective(trial):
@@ -49,10 +43,6 @@ def objective(trial):
     epochs = 3  # Fixed number of epochs for quick trials
     
     # Split the data into training and validation sets
-    # Load the dataset
-    data = load_data("data/dataset.csv")
-    X, tokenizer = preprocess_text(data['text'])
-    y = data['label']
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     
     # Build and train the model
@@ -81,7 +71,6 @@ def objective(trial):
     
     return val_accuracy
 
-
 # Main function to load data, run Optuna, and save model
 def main():
     # Set up MLflow
@@ -89,22 +78,22 @@ def main():
 
     # Load the dataset
     data = load_data("data/dataset.csv")
-    X, tokenizer = preprocess_text(data['text'])
+    X, tokenizer = preprocess_text(data['text'])  # Assuming 'text' is the column with text data
     y = data['label']  # Assuming 'label' is the target variable
 
     # Run Optuna for hyperparameter tuning
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=10)
 
-    # Get the best hyperparameters
+    # Get the best hyperparameters from the study
     best_params = study.best_params
     print("Best Hyperparameters:", best_params)
 
-    # Build and train the final model
+    # Build and train the final model with the best parameters
     final_model = build_model(
-        best_params['embedding_dim'],
-        best_params['lstm_units_1'],
-        best_params['lstm_units_2'],
+        best_params['embedding_dim'], 
+        best_params['lstm_units_1'], 
+        best_params['lstm_units_2'], 
         best_params['dropout_rate']
     )
 
@@ -121,7 +110,6 @@ def main():
     mlflow.keras.log_model(final_model, "model")
 
     mlflow.end_run()
-
 
 if __name__ == "__main__":
     main()
