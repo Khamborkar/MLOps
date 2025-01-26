@@ -64,7 +64,6 @@ def objective(trial):
     dropout_rate = trial.suggest_float("dropout_rate", 0.2, 0.5)
     batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
     epochs = 3  # Fixed epochs for quick trials
-    
     # Prepare data
     df = pd.read_csv("Tweets.csv")
     df["processed_text"] = (
@@ -106,18 +105,20 @@ def objective(trial):
         tokenizer.texts_to_sequences(X_test),
         maxlen = max_sequence_length
     )
-
-    model = build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate)
+    model = build_model(embedding_dim,
+                        lstm_units_1,
+                        lstm_units_2,
+                        dropout_rate)
     early_stopping = EarlyStopping(
         monitor = "val_loss", patience=3,
         restore_best_weights=  True
     )
-
     # Train the model
     model.fit(
         X_train, y_train,
         validation_data = (X_val, y_val),
-        epochs=epochs, batch_size=batch_size, callbacks=[early_stopping]
+        epochs=epochs, batch_size=batch_size,
+        callbacks=[early_stopping]
     )
     
     # Evaluate the model
