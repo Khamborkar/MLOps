@@ -50,9 +50,9 @@ def build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate):
         Dense(3, activation="softmax")
     ])
     model.compile(
-        optimizer="adam",
-        loss="sparse_categorical_crossentropy",
-        metrics=["accuracy"]
+        optimizer = "adam",
+        loss = "sparse_categorical_crossentropy",
+        metrics = ["accuracy"]
     )
     return model
 
@@ -82,12 +82,12 @@ def objective(trial):
     X_train, X_temp, y_train, y_temp = train_test_split(
         df["processed_text"],
         df["airline_sentiment_value"],
-        test_size=0.3,
-        random_state=42
+        test_size = 0.3,
+        random_state = 42
     )
 
     X_val, X_test, y_val, y_test = train_test_split(
-        X_temp, y_temp, test_size=0.5, random_state=42
+        X_temp, y_temp, test_size = 0.5, random_state = 42
     )
 
     tokenizer = Tokenizer(num_words=10000)
@@ -96,26 +96,27 @@ def objective(trial):
     max_sequence_length = 100
     X_train = pad_sequences(
         tokenizer.texts_to_sequences(X_train),
-        maxlen=max_sequence_length
+        maxlen = max_sequence_length
     )
     X_val = pad_sequences(
         tokenizer.texts_to_sequences(X_val),
-        maxlen=max_sequence_length
+        maxlen = max_sequence_length
     )
     X_test = pad_sequences(
         tokenizer.texts_to_sequences(X_test),
-        maxlen=max_sequence_length
+        maxlen = max_sequence_length
     )
 
     model = build_model(embedding_dim, lstm_units_1, lstm_units_2, dropout_rate)
     early_stopping = EarlyStopping(
-        monitor="val_loss", patience=3, restore_best_weights=True
+        monitor = "val_loss", patience=3,
+        restore_best_weights=  True
     )
 
     # Train the model
     model.fit(
         X_train, y_train,
-        validation_data=(X_val, y_val),
+        validation_data = (X_val, y_val),
         epochs=epochs, batch_size=batch_size, callbacks=[early_stopping]
     )
     
@@ -162,12 +163,12 @@ if __name__ == "__main__":
         X_train, X_temp, y_train, y_temp = train_test_split(
             df["processed_text"],
             df["airline_sentiment_value"],
-            test_size=0.3,
-            random_state=42
+            test_size = 0.3,
+            random_state = 42
         )
 
         X_val, X_test, y_val, y_test = train_test_split(
-            X_temp, y_temp, test_size=0.5, random_state=42
+            X_temp, y_temp, test_size = 0.5, random_state = 42
         )
 
         tokenizer = Tokenizer(num_words=10000)
@@ -176,15 +177,15 @@ if __name__ == "__main__":
         max_sequence_length = 100
         X_train = pad_sequences(
             tokenizer.texts_to_sequences(X_train),
-            maxlen=max_sequence_length
+            maxlen = max_sequence_length
         )
         X_val = pad_sequences(
             tokenizer.texts_to_sequences(X_val),
-            maxlen=max_sequence_length
+            maxlen = max_sequence_length
         )
         X_test = pad_sequences(
             tokenizer.texts_to_sequences(X_test),
-            maxlen=max_sequence_length
+            maxlen = max_sequence_length
         )
 
         # Build and train the model with best parameters
@@ -196,14 +197,15 @@ if __name__ == "__main__":
         )
 
         early_stopping = EarlyStopping(
-            monitor="val_loss", patience=3, restore_best_weights=True
+            monitor = "val_loss", patience=3, restore_best_weights = True
         )
 
         history = model.fit(
             X_train, y_train,
-            validation_data=(X_val, y_val),
-            epochs=best_params["epochs"], batch_size=best_params["batch_size"],
-            callbacks=[early_stopping]
+            validation_data = (X_val, y_val),
+            epochs=best_params["epochs"],
+            batch_size = best_params["batch_size"],
+            callbacks = [early_stopping]
         )
 
         # Evaluate the model
@@ -221,7 +223,12 @@ if __name__ == "__main__":
         # Save model versioning with DVC
         subprocess.run(["dvc", "add", "model.keras"], check=True)
         subprocess.run(["dvc", "add", "tokenizer.pkl"], check=True)
-        subprocess.run(["git", "add", "model.keras.dvc", "tokenizer.pkl.dvc"], check=True)
-        subprocess.run(["git", "commit", "-m", "Save best model and tokenizer with DVC"], check=True)
+        subprocess.run(["git", "add",
+                        "model.keras.dvc", "tokenizer.pkl.dvc"],
+                       check=True)
+        subprocess.run(["git",
+                        "commit", "-m",
+                        "Save best model and tokenizer with DVC"],
+                       check=True)
 
         print("DVC and MLflow run completed.")
