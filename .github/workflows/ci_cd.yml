@@ -112,7 +112,7 @@ jobs:
   
     - name: Integration Test
       run: |
-        curl -f http://127.0.0.1:8000 || exit 1  # Test root endpoint
+        curl -f http://127.0.0.1:5000 || exit 1  # Test root endpoint
   
     - name: Stop Flask Application
       run: pkill gunicorn  # Gracefully stop Gunicorn
