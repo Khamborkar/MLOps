@@ -42,11 +42,11 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
-        pip install mlflow
+        pip install mlflow optuna  # Install Optuna for hyperparameter tuning
 
-    - name: Train model
+    - name: Train model with Optuna
       run: |
-        python src/model.py  # The script that trains and saves the model
+        python src/model.py  # The script that trains and tunes the model using Optuna
 
     - name: Save model artifact
       uses: actions/upload-artifact@v3
@@ -71,7 +71,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
-        pip install .
+        pip install .  # Make sure that the latest model is available
 
     - name: Set PYTHONPATH environment variable
       run: |
@@ -82,7 +82,6 @@ jobs:
       run: |
         pytest tests/ --disable-warnings
 
- 
   deploy:
     needs: test
     runs-on: ubuntu-latest
@@ -104,8 +103,8 @@ jobs:
     - name: Train the Model
       run: |
         # Train the model and save the artifacts
-        python src/model.py
-  
+        python src/model.py  # This will include Optuna tuning
+    
     - name: Run Flask application with Gunicorn
       run: |
         gunicorn -w 4 -b 0.0.0.0:8000 app:app &  # Start the Flask app in the background
@@ -118,7 +117,6 @@ jobs:
     - name: Stop Flask Application
       run: pkill gunicorn  # Gracefully stop Gunicorn
 
-  
   lint:
     runs-on: ubuntu-latest
 
@@ -138,4 +136,3 @@ jobs:
     - name: Run linter
       run: |
         flake8 src tests --count --select=E9,E7,E5,F,C901,W --show-source --statistics
-        

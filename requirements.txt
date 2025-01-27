@@ -8,6 +8,10 @@ numpy
 seaborn
 wordcloud
 Flask
+Jinja2
+markupsafe
+Werkzeug
 mlflow
 dvc
 gunicorn
+optuna  # Add Optuna for hyperparameter tuning
